@@ -19,7 +19,7 @@ class ChatGPT(commands.Cog):
     async def askgpt(self, ctx, *, question: str):
         """Ask a question to ChatGPT."""
 
-        url = "https://api.openai.com/v1/engines/davinci-codex/completions"
+        url = "https://api.openai.com/v1/chat/completions"
 
         headers = {
             "Content-Type": "application/json",
@@ -28,6 +28,7 @@ class ChatGPT(commands.Cog):
 
         prompt = f"{question}\nAnswer:"
         data = {
+            "model": "gpt-3.5-turbo"
             "prompt": prompt,
             "max_tokens": 50,
             "n": 1,
