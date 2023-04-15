@@ -1,0 +1,7 @@
+{
+    "author" : ["Dylan Patrick"],
+    "install_msg" : "Thanks for installing. Please submit issue reports on my repo if something's broken.",
+    "name" : "dylanpatrick-cogs",
+    "short" : "Fun cogs",
+    "description" : "Cogs that are fun."
+}
