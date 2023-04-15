@@ -2,9 +2,11 @@ import aiohttp
 import discord
 import json
 from redbot.core import commands
+import os
 
 def load_api_key():
-    with open("config.json", "r") as f:
+    file_path = os.path.join(os.path.dirname(__file__), "config.json")
+    with open(file_path, "r") as f:
         config = json.load(f)
     return config["chatgpt_api_key"]
 
@@ -50,13 +52,14 @@ class ChatGPT(commands.Cog):
     async def updategptkey(self, ctx, *, new_key: str):
         """Update the ChatGPT API key. Only the bot owner can use this command."""
 
-        # Update the API key in the config file
-        with open("config.json", "r") as f:
+        #Update the API key in the config file
+        file_path = os.path.join(os.path.dirname(__file__), "config.json")
+        with open(file_path, "r") as f:
             config = json.load(f)
 
         config["chatgpt_api_key"] = new_key
 
-        with open("config.json", "w") as f:
+        with open(file_path, "w") as f:
             json.dump(config, f)
 
         # Update the API key in the class instance
