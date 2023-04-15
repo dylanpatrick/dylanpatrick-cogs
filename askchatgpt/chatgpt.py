@@ -28,7 +28,7 @@ class ChatGPT(commands.Cog):
 
         prompt = f"{question}\nAnswer:"
         data = {
-            "model": "gpt-3.5-turbo"
+            "model": "gpt-3.5-turbo",
             "prompt": prompt,
             "max_tokens": 50,
             "n": 1,
