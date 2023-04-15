@@ -1,0 +1,9 @@
+{
+    "author": ["aikaterna", "Paddo"],
+    "description": "Ask ChatGPT a question.",
+    "install_msg": "Thanks for installing, have fun.",
+    "short": "Ask ChatGPT a question.",
+    "tags": ["chatgpt"],
+    "type": "COG",
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+}
