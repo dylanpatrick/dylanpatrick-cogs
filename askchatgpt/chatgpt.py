@@ -1,67 +1,55 @@
-import aiohttp
-import discord
-import json
-from redbot.core import commands
-import os
-
-def load_api_key():
-    file_path = os.path.join(os.path.dirname(__file__), "config.json")
-    with open(file_path, "r") as f:
-        config = json.load(f)
-    return config["chatgpt_api_key"]
+import openai
+from redbot.core import commands, Config
+from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
+import asyncio
 
 class ChatGPT(commands.Cog):
-    """ChatGPT integration for Redbot."""
+    """A Redbot cog to interact with OpenAI's ChatGPT."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red):
         self.bot = bot
-        self.api_key = load_api_key()
+        self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
+        default_global = {
+            "api_key": None
+        }
+        self.config.register_global(**default_global)
 
     @commands.command()
-    async def askgpt(self, ctx, *, question: str):
+    async def askgpt(self, ctx, *, query: str):
         """Ask a question to ChatGPT."""
+        api_key = await self.config.api_key()
+        if not api_key:
+            await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+            return
 
-        url = "https://api.openai.com/v1/chat/completions"
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-
-        prompt = f"{question}\nAnswer:"
-        data = {
-            "model": "gpt-3.5-turbo",
-            "prompt": prompt,
-            "max_tokens": 50,
-            "n": 1,
-            "stop": None,
-            "temperature": 0.8
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=data, headers=headers) as response:
-                if response.status == 200:
-                    json_response = await response.json()
-                    answer = json_response["choices"][0]["text"].strip()
-                    await ctx.send(answer)
-                else:
-                    await ctx.send("Error: Unable to get a response from ChatGPT.")
+        try:
+            openai.api_key = api_key
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "system", "content": "You are a helpful assistant."},
+                          {"role": "user", "content": query}]
+            )
+            await ctx.send(response.choices[0].message["content"])
+        except Exception as e:
+            await ctx.send(f"An error occurred: {str(e)}")
 
     @commands.command()
     @commands.is_owner()
-    async def updategptkey(self, ctx, *, new_key: str):
-        """Update the ChatGPT API key. Only the bot owner can use this command."""
+    async def setapikey(self, ctx, new_key: str):
+        """Set the OpenAI API key (Owner only)."""
+        await self.config.api_key.set(new_key)
+        await ctx.send("API key updated successfully.")
 
-        #Update the API key in the config file
-        file_path = os.path.join(os.path.dirname(__file__), "config.json")
-        with open(file_path, "r") as f:
-            config = json.load(f)
+    @commands.command()
+    @commands.is_owner()
+    async def getapikey(self, ctx):
+        """Get the current OpenAI API key (Owner only)."""
+        api_key = await self.config.api_key()
+        if api_key:
+            await ctx.send(f"The current API key is: {api_key}")
+        else:
+            await ctx.send("No API key is set.")
 
-        config["chatgpt_api_key"] = new_key
-
-        with open(file_path, "w") as f:
-            json.dump(config, f)
-
-        # Update the API key in the class instance
-        self.api_key = new_key
-        await ctx.send("ChatGPT API key has been successfully updated.")
+def setup(bot):
+    bot.add_cog(ChatGPT(bot))
