@@ -2,7 +2,7 @@ import openai
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 
-class ChatGPT(commands.Cog):
+class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT."""
 
     def __init__(self, bot: Red):
@@ -57,4 +57,4 @@ class ChatGPT(commands.Cog):
         await ctx.send(f"Current API key: {api_key}\nCurrent model: {model}")
 
 def setup(bot):
-    bot.add_cog(ChatGPT(bot))
+    bot.add_cog(AskChatGPT(bot))
