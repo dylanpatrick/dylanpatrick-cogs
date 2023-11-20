@@ -30,7 +30,13 @@ class AskChatGPT(commands.Cog):
                 messages=[{"role": "system", "content": "You are a helpful assistant."},
                           {"role": "user", "content": query}]
             )
-            await ctx.send(response.choices[0].message["content"])
+            message = response.choices[0].message["content"]
+            # Check if message is longer than 2000 characters and split if necessary
+            if len(message) > 2000:
+                for i in range(0, len(message), 2000):
+                    await ctx.send(message[i:i+2000])
+            else:
+                await ctx.send(message)
         except Exception as e:
             await ctx.send(f"An error occurred: {str(e)}")
 
