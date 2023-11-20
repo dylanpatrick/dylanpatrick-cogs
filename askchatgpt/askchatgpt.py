@@ -4,7 +4,7 @@ from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 import asyncio
 
-class ChatGPT(commands.Cog):
+class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT."""
 
     def __init__(self, bot: Red):
@@ -52,4 +52,4 @@ class ChatGPT(commands.Cog):
             await ctx.send("No API key is set.")
 
 def setup(bot):
-    bot.add_cog(ChatGPT(bot))
+    bot.add_cog(AskChatGPT(bot))
