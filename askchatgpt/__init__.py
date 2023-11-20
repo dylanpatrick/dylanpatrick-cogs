@@ -1,4 +1,4 @@
-from .chatgpt import ChatGPT
+from .askchatgpt import AskChatGPT
 
 
 def setup(bot):
