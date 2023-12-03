@@ -10,7 +10,7 @@ class ValleyRestriction(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles=True)
-    async def valleyrestrict(self, ctx, member: discord.Member):
+    async def valleykick(self, ctx, member: discord.Member):
         """Restrict a user to post in 'The Valley' for 10 seconds."""
         valley_channel = discord.utils.get(ctx.guild.text_channels, name='The Valley')
         if valley_channel is None:
