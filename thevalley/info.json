@@ -1,6 +1,6 @@
 {
     "author": ["dylanpatrick", "dylan"],
-    "description": "Kick a user into "The Valley".",
+    "description": "Kick a user into The Valley.",
     "install_msg": "Thanks for installing, have fun.",
     "short": "The Valley",
     "tags": ["kick"],
