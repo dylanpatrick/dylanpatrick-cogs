@@ -2,7 +2,7 @@ from redbot.core import commands
 import discord
 import asyncio
 
-class ValleyRestriction(commands.Cog):
+class TheValley(commands.Cog):
     """Cog to restrict users to post in 'The Valley' for 10 seconds."""
 
     def __init__(self, bot):
