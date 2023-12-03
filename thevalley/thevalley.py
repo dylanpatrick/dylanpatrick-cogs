@@ -12,7 +12,7 @@ class TheValley(commands.Cog):
     @commands.has_permissions(manage_roles=True)
     async def valleykick(self, ctx, member: discord.Member):
         """Restrict a user to post in 'The Valley' for 10 seconds."""
-        valley_channel = discord.utils.get(ctx.guild.text_channels, name='The Valley')
+        valley_channel = discord.utils.get(ctx.guild.text_channels, name='the-valley')
         if valley_channel is None:
             await ctx.send("Channel 'The Valley' not found.")
             return
@@ -20,7 +20,7 @@ class TheValley(commands.Cog):
         # Store original permissions
         original_overwrite = valley_channel.overwrites_for(member)
 
-        # Modify permissions to allow sending messages only in 'The Valley'
+        # Modify permissions to allow sending messages only in 'the-valley'
         overwrite = discord.PermissionOverwrite(send_messages=True)
         await valley_channel.set_permissions(member, overwrite=overwrite)
 
