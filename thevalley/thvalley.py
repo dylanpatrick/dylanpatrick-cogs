@@ -28,5 +28,5 @@ async def valleykick(self, ctx, member: discord.Member):
     await ctx.send(f"{member} can now post in other channels again.")
 
 def setup(bot):
-    bot.add_cog(ValleyRestriction(bot))
+    bot.add_cog(TheValley(bot))
 
