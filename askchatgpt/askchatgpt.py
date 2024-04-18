@@ -1,12 +1,13 @@
 import openai
 import discord
+import requests  # Import the requests library
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
 import logging
 
 class AskChatGPT(commands.Cog):
-    """A Redbot cog to interact with OpenAI's ChatGPT."""
+    """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -24,7 +25,7 @@ class AskChatGPT(commands.Cog):
         if not api_key:
             await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
             return
-        
+
         try:
             async with ctx.typing():
                 openai.api_key = api_key
