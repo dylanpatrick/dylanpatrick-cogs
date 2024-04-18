@@ -1,6 +1,6 @@
 import openai
 import discord
-import requests  # Import the requests library
+import requests
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
@@ -25,22 +25,8 @@ class AskChatGPT(commands.Cog):
         if not api_key:
             await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
             return
-
-        try:
-            async with ctx.typing():
-                openai.api_key = api_key
-                response = openai.Image.create(prompt=description, n=1)  # Assuming one image generation
-                image_url = response['data'][0]['url']  # Get the URL of the generated image
-
-                # Download image from URL
-                response = requests.get(image_url)
-                image = BytesIO(response.content)
-                image.seek(0)
-
-                # Send image to Discord
-                await ctx.send(file=discord.File(image, "generated_image.png"))
-        except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+        
+        await self.handle_generateimage(ctx, description)
 
     @commands.Cog.listener("on_message")
     async def on_mention(self, message: discord.Message):
@@ -69,9 +55,35 @@ class AskChatGPT(commands.Cog):
                     messages=[{"role": "system", "content": "You are a helpful assistant."},
                               {"role": "user", "content": query}]
                 )
-                await message.channel.send(response.choices[0].message["content"])
+                full_message = response.choices[0].message["content"]
+                # Splitting message into chunks of 2000 characters
+                for i in range(0, len(full_message), 2000):
+                    await message.channel.send(full_message[i:i+2000])
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
+
+    async def handle_generateimage(self, channel, *, description: str):
+        """Handle the image generation functionality."""
+        api_key = await self.config.api_key()
+        if not api_key:
+            await channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+            return
+
+        try:
+            async with channel.typing():
+                openai.api_key = api_key
+                response = openai.Image.create(prompt=description, n=1)  # Assuming one image generation
+                image_url = response['data'][0]['url']  # Get the URL of the generated image
+
+                # Download image from URL
+                response = requests.get(image_url)
+                image = BytesIO(response.content)
+                image.seek(0)
+
+                # Send image to Discord
+                await channel.send(file=discord.File(image, "generated_image.png"))
+        except Exception as e:
+            await channel.send(f"An error occurred: {str(e)}")
 
 def setup(bot):
     bot.add_cog(AskChatGPT(bot))
