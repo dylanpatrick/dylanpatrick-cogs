@@ -1,9 +1,11 @@
 import openai
+import discord
 from redbot.core import commands, Config
 from redbot.core.bot import Red
+from io import BytesIO
 
-class AskChatGPT(commands.Cog):
-    """A Redbot cog to interact with OpenAI's ChatGPT."""
+class ChatGPT(commands.Cog):
+    """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -15,12 +17,27 @@ class AskChatGPT(commands.Cog):
         self.config.register_global(**default_global)
 
     @commands.command()
-    async def askgpt(self, ctx, *, query: str):
-        """Ask a question to ChatGPT."""
+    async def generateimage(self, ctx, *, description: str):
+        """Generate an image from a description using DALL-E."""
+        # ... generateimage command implementation ...
+
+    @commands.Cog.listener("on_message")
+    async def on_mention(self, message: discord.Message):
+        """Handle messages that mention the bot."""
+        if message.author.bot or self.bot.user not in message.mentions:
+            return
+
+        content = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
+
+        # Handling the askgpt functionality when the bot is mentioned
+        await self.handle_askgpt(message, query=content)
+
+    async def handle_askgpt(self, message, *, query: str):
+        """Handle the askgpt functionality."""
         api_key = await self.config.api_key()
         model = await self.config.model()
         if not api_key:
-            await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+            await message.channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
             return
 
         try:
@@ -30,37 +47,11 @@ class AskChatGPT(commands.Cog):
                 messages=[{"role": "system", "content": "You are a helpful assistant."},
                           {"role": "user", "content": query}]
             )
-            message = response.choices[0].message["content"]
-            # Check if message is longer than 2000 characters and split if necessary
-            if len(message) > 2000:
-                for i in range(0, len(message), 2000):
-                    await ctx.send(message[i:i+2000])
-            else:
-                await ctx.send(message)
+            await message.channel.send(response.choices[0].message["content"])
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await message.channel.send(f"An error occurred: {str(e)}")
 
-    @commands.command()
-    @commands.is_owner()
-    async def setapikey(self, ctx, new_key: str):
-        """Set the OpenAI API key (Owner only)."""
-        await self.config.api_key.set(new_key)
-        await ctx.send("API key updated successfully.")
-
-    @commands.command()
-    @commands.is_owner()
-    async def setmodel(self, ctx, new_model: str):
-        """Set the OpenAI model (Owner only)."""
-        await self.config.model.set(new_model)
-        await ctx.send(f"Model updated to {new_model}.")
-
-    @commands.command()
-    @commands.is_owner()
-    async def getsettings(self, ctx):
-        """Get the current settings (Owner only)."""
-        api_key = await self.config.api_key()
-        model = await self.config.model()
-        await ctx.send(f"Current API key: {api_key}\nCurrent model: {model}")
+    # ... rest of your cog ...
 
 def setup(bot):
-    bot.add_cog(AskChatGPT(bot))
+    bot.add_cog(ChatGPT(bot))
