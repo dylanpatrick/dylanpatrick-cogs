@@ -4,7 +4,7 @@ from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
 
-class ChatGPT(commands.Cog):
+class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
 
     def __init__(self, bot: Red):
@@ -54,4 +54,4 @@ class ChatGPT(commands.Cog):
     # ... rest of your cog ...
 
 def setup(bot):
-    bot.add_cog(ChatGPT(bot))
+    bot.add_cog(AskChatGPT(bot))
