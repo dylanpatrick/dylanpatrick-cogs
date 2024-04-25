@@ -1,10 +1,9 @@
 import openai
 import discord
-import requests
+import aiohttp  # Using aiohttp for asynchronous HTTP requests
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
-import logging
 
 class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
@@ -50,12 +49,12 @@ class AskChatGPT(commands.Cog):
         try:
             async with message.channel.typing():
                 openai.api_key = api_key
-                response = openai.ChatCompletion.create(
-                    model=await self.config.model(),
-                    messages=[{"role": "system", "content": "You are a helpful assistant."},
-                              {"role": "user", "content": query}]
+                response = openai.Completion.create(
+                    engine=await self.config.model(),
+                    prompt=query,
+                    max_tokens=150
                 )
-                full_message = response.choices[0].message["content"]
+                full_message = response.choices[0].text.strip()
                 # Splitting message into chunks of 2000 characters
                 for i in range(0, len(full_message), 2000):
                     await message.channel.send(full_message[i:i+2000])
@@ -66,24 +65,32 @@ class AskChatGPT(commands.Cog):
         """Handle the image generation functionality."""
         api_key = await self.config.api_key()
         if not api_key:
-            await channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+            await channel.send("API key not set.")
             return
 
         try:
             async with channel.typing():
                 openai.api_key = api_key
-                response = openai.Image.create(prompt=description, n=1)  # Assuming one image generation
-                image_url = response['data'][0]['url']  # Get the URL of the generated image
+                response = openai.Image.create(
+                    model="text-to-image-002",  # Ensure you use a supported model for image generation
+                    prompt=description,
+                    n=1
+                )
+                image_url = response.data[0].url  # Get the URL of the generated image
 
-                # Download image from URL
-                response = requests.get(image_url)
-                image = BytesIO(response.content)
-                image.seek(0)
-
-                # Send image to Discord
-                await channel.send(file=discord.File(image, "generated_image.png"))
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(image_url) as resp:
+                        if resp.status == 200:
+                            image_data = await resp.read()
+                            image = BytesIO(image_data)
+                            image.seek(0)
+                            await channel.send(file=discord.File(image, "generated_image.png"))
         except Exception as e:
             await channel.send(f"An error occurred: {str(e)}")
 
 async def setup(bot):
     await bot.add_cog(AskChatGPT(bot))
+
+async def teardown(bot):
+    """Remove the cog asynchronously when it's no longer needed."""
+    await bot.remove_cog("AskChatGPT")
