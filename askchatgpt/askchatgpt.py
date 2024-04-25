@@ -79,4 +79,5 @@ async def setup(bot):
 
 # Asynchronous teardown function
 async def teardown(bot):
+    cog = AskChatGPT(bot)
     await bot.remove_cog("AskChatGPT")
