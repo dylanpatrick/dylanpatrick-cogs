@@ -83,4 +83,8 @@ class AskChatGPT(commands.Cog):
                 # Send image to Discord
                 await channel.send(file=discord.File(image, "generated_image.png"))
         except Exception as e:
-            await channel.send(f"An
+            await channel.send(f"An error occurred: {str(e)}")
+
+def setup(bot):
+    cog = AskChatGPT(bot)
+    bot.add_cog(cog)
