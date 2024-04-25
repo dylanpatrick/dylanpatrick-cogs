@@ -76,8 +76,3 @@ class AskChatGPT(commands.Cog):
 async def setup(bot):
     cog = AskChatGPT(bot)
     await bot.add_cog(AskChatGPT(bot))
-
-# Asynchronous teardown function
-async def teardown(bot):
-    cog = AskChatGPT(bot)
-    await bot.remove_cog("AskChatGPT")
