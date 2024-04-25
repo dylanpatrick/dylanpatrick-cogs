@@ -1,6 +1,6 @@
 import openai
 import discord
-import aiohttp  # Use aiohttp for asynchronous HTTP requests
+import aiohttp
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
@@ -31,7 +31,7 @@ class AskChatGPT(commands.Cog):
         if message.author.bot or self.bot.user not in message.mentions:
             return
         content = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
-        content = content.replace(f"<@{self.bot.user.id}>", "")..strip()
+        content = content.replace(f"<@{self.bot.user.id}>", "").strip()
         await self.handle_askgpt(message, query=content)
 
     async def handle_askgpt(self, message, *, query: str):
@@ -76,5 +76,4 @@ async def setup(bot):
     await bot.add_cog(AskChatGPT(bot))
 
 async def teardown(bot):
-    """Remove the cog asynchronously when it's no longer needed."""
     await bot.remove_cog("AskChatGPT")
