@@ -1,6 +1,6 @@
 import openai
 import discord
-import requests
+import aiohttp  # Use aiohttp for asynchronous HTTP requests
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
@@ -19,6 +19,7 @@ class AskChatGPT(commands.Cog):
 
     @commands.command()
     async def generateimage(self, ctx, *, description: str):
+        """Generate an image from a description using DALL-E."""
         api_key = await self.config.api_key()
         if not api_key:
             await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
@@ -34,6 +35,7 @@ class AskChatGPT(commands.Cog):
         await self.handle_askgpt(message, query=content)
 
     async def handle_askgpt(self, message, *, query: str):
+        """Handle the askgpt functionality."""
         api_key = await self.config.api_key()
         if not api_key:
             await message.channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
@@ -50,6 +52,7 @@ class AskChatGPT(commands.Cog):
                 await message.channel.send(full_message[i:i+2000])
 
     async def handle_generateimage(self, channel, *, description: str):
+        """Handle the image generation functionality."""
         api_key = await self.config.api_key()
         if not api_key:
             await channel.send("API key not set.")
@@ -58,13 +61,21 @@ class AskChatGPT(commands.Cog):
             openai.api_key = api_key
             response = openai.Image.create(prompt=description, n=1)
             image_url = response['data'][0]['url']
-            response = requests.get(image_url)
-            image = BytesIO(response.content)
+            image_data = await self.fetch_image(image_url)
+            image = BytesIO(image_data)
             image.seek(0)
             await channel.send(file=discord.File(image, "generated_image.png"))
 
+    async def fetch_image(self, url):
+        """Asynchronously fetches an image from a URL using aiohttp."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                return await response.read()
+
+# Asynchronous setup function required by the latest asyncio updates
 async def setup(bot):
     await bot.add_cog(AskChatGPT(bot))
 
+# Asynchronous teardown function
 async def teardown(bot):
     await bot.remove_cog("AskChatGPT")
