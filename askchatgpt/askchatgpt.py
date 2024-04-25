@@ -31,7 +31,7 @@ class AskChatGPT(commands.Cog):
         if message.author.bot or self.bot.user not in message.mentions:
             return
         content = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
-        content = content.replace(f"<@{self.bot.user.id}>", "").strip()
+        content = content.replace(f"<@{self.bot.user.id}>", "")..strip()
         await self.handle_askgpt(message, query=content)
 
     async def handle_askgpt(self, message, *, query: str):
@@ -72,6 +72,9 @@ class AskChatGPT(commands.Cog):
             async with session.get(url) as response:
                 return await response.read()
 
-# Asynchronous setup function required by the latest asyncio updates
 async def setup(bot):
     await bot.add_cog(AskChatGPT(bot))
+
+async def teardown(bot):
+    """Remove the cog asynchronously when it's no longer needed."""
+    await bot.remove_cog("AskChatGPT")
