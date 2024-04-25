@@ -74,6 +74,7 @@ class AskChatGPT(commands.Cog):
 
 # Asynchronous setup function required by the latest asyncio updates
 async def setup(bot):
+    cog = AskChatGPT(bot)
     await bot.add_cog(AskChatGPT(bot))
 
 # Asynchronous teardown function
