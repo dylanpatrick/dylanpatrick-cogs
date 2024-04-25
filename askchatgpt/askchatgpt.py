@@ -63,5 +63,8 @@ class AskChatGPT(commands.Cog):
             image.seek(0)
             await channel.send(file=discord.File(image, "generated_image.png"))
 
-def setup(bot):
-    bot.add_cog(AskChatGPT(bot))
+async def setup(bot):
+    await bot.add_cog(AskChatGPT(bot))
+
+async def teardown(bot):
+    await bot.remove_cog("AskChatGPT")
