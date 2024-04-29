@@ -49,7 +49,7 @@ class AskChatGPT(commands.Cog):
         try:
             async with message.channel.typing():
                 openai.api_key = api_key
-                response = openai.Completion.create(
+                response = openai.Completions.create(
                     engine=await self.config.model(),
                     prompt=query,
                     max_tokens=150
