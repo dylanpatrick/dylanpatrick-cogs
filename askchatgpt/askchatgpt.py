@@ -1,7 +1,6 @@
-import os
+import openai
 import discord
-import aiohttp
-from openai import OpenAI
+import aiohttp  # Using aiohttp for asynchronous HTTP requests
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
@@ -12,21 +11,23 @@ class AskChatGPT(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
-        default_global = {
-            "api_key": os.getenv('OPENAI_API_KEY'),  # Get API key from environment variables
-            "model": "gpt-3.5-turbo-instruct"  # Updated model
-        }
-        self.config.register_global(**default_global)
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))  # Initialize the OpenAI client with API key
+        self.config.register_global(api_key=None)
+
+    @commands.command()
+    async def setapikey(self, ctx, *, key: str):
+        """Set the OpenAI API key."""
+        await self.config.api_key.set(key)
+        await ctx.send("API key updated successfully.")
 
     @commands.command()
     async def generateimage(self, ctx, *, description: str):
         """Generate an image from a description using DALL-E."""
-        if not self.config.api_key:
-            await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+        api_key = await self.config.api_key()
+        if not api_key:
+            await ctx.send("OpenAI API key is not set. Please set it using `!setapikey` command.")
             return
         
-        await self.handle_generateimage(ctx, description)
+        await self.handle_generateimage(ctx, description, api_key)
 
     @commands.Cog.listener("on_message")
     async def on_mention(self, message: discord.Message):
@@ -35,20 +36,21 @@ class AskChatGPT(commands.Cog):
 
         content = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
         content = content.replace(f"<@{self.bot.user.id}>", "").strip()
-        await self.handle_askgpt(message, query=content)
+        await self.handle_askgpt(message, content)
 
-    async def handle_askgpt(self, message, *, query: str):
-        if not self.config.api_key:
-            await message.channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
+    async def handle_askgpt(self, message, query: str):
+        api_key = await self.config.api_key()
+        if not api_key:
+            await message.channel.send("OpenAI API key is not set. Please set it using `!setapikey` command.")
             return
 
         try:
             async with message.channel.typing():
-                response = self.client.completions.create(
-                    model=await self.config.model(),
+                openai.api_key = api_key
+                response = openai.Completion.create(
+                    engine="text-davinci-002",
                     prompt=query,
-                    max_tokens=150,
-                    temperature=0.7  # You can adjust the temperature based on how deterministic you want the response to be
+                    max_tokens=150
                 )
                 full_message = response.choices[0].text.strip()
                 for i in range(0, len(full_message), 2000):
@@ -56,15 +58,12 @@ class AskChatGPT(commands.Cog):
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
 
-    async def handle_generateimage(self, channel, *, description: str):
-        if not self.config.api_key:
-            await channel.send("API key not set.")
-            return
-
+    async def handle_generateimage(self, ctx, description: str, api_key: str):
         try:
-            async with channel.typing():
-                response = self.client.images.create(
-                    model="text-to-image-002",  # Updated model
+            async with ctx.typing():
+                openai.api_key = api_key
+                response = openai.Image.create(
+                    model="text-to-image-002",
                     prompt=description,
                     n=1
                 )
@@ -75,9 +74,9 @@ class AskChatGPT(commands.Cog):
                             image_data = await resp.read()
                             image = BytesIO(image_data)
                             image.seek(0)
-                            await channel.send(file=discord.File(image, "generated_image.png"))
+                            await ctx.send(file=discord.File(image, "generated_image.png"))
         except Exception as e:
-            await channel.send(f"An error occurred: {str(e)}")
+            await ctx.send(f"An error occurred: {str(e)}")
 
 async def setup(bot):
     await bot.add_cog(AskChatGPT(bot))
