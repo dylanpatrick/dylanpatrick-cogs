@@ -1,9 +1,10 @@
-import openai
+import os
 import discord
-import aiohttp
+from openai import OpenAI
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
+import aiohttp  # For handling image downloading
 
 class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
@@ -12,16 +13,16 @@ class AskChatGPT(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
         default_global = {
-            "api_key": None,
-            "model": "gpt-3.5-turbo"  # Default model
+            "api_key": os.getenv('OPENAI_API_KEY'),  # Set API key from environment
+            "model": "gpt-3.5-turbo-instruct"  # Default model set to GPT-3.5 Turbo Instruct
         }
         self.config.register_global(**default_global)
+        self.client = OpenAI()  # Initialize the OpenAI client
 
     @commands.command()
     async def generateimage(self, ctx, *, description: str):
         """Generate an image from a description using DALL-E."""
-        api_key = await self.config.api_key()
-        if not api_key:
+        if not self.config.api_key:
             await ctx.send("OpenAI API key is not set. Please set it using `setapikey` command.")
             return
         
@@ -36,17 +37,14 @@ class AskChatGPT(commands.Cog):
         await self.handle_askgpt(message, query=content)
 
     async def handle_askgpt(self, message, *, query: str):
-        api_key = await self.config.api_key()
-        if not api_key:
+        if not self.config.api_key:
             await message.channel.send("OpenAI API key is not set. Please set it using `setapikey` command.")
             return
 
-        client = openai.Completion()
         try:
             async with message.channel.typing():
-                openai.api_key = api_key
-                response = client.create(
-                    engine=await self.config.model(),
+                response = self.client.Completion.create(
+                    model="gpt-3.5-turbo-instruct",
                     prompt=query,
                     max_tokens=150
                 )
@@ -57,21 +55,18 @@ class AskChatGPT(commands.Cog):
             await message.channel.send(f"An error occurred: {str(e)}")
 
     async def handle_generateimage(self, channel, *, description: str):
-        api_key = await self.config.api_key()
-        if not api_key:
+        if not self.config.api_key:
             await channel.send("API key not set.")
             return
 
         try:
             async with channel.typing():
-                openai.api_key = api_key
-                response = openai.Image.create(
-                    model="text-to-image-002",  # Update with correct model if different
+                response = self.client.Image.create(
+                    model="text-to-image-002",
                     prompt=description,
                     n=1
                 )
                 image_url = response.data[0].url
-
                 async with aiohttp.ClientSession() as session:
                     async with session.get(image_url) as resp:
                         if resp.status == 200:
