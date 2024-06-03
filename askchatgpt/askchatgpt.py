@@ -1,6 +1,6 @@
 import openai
 import discord
-import aiohttp
+import aiohttp  # Using aiohttp for asynchronous HTTP requests
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
@@ -47,12 +47,12 @@ class AskChatGPT(commands.Cog):
         try:
             async with message.channel.typing():
                 openai.api_key = api_key
-                response = await openai.ChatCompletion.acreate(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": query}],
+                response = openai.Completion.create(
+                    engine="text-davinci-002",
+                    prompt=query,
                     max_tokens=150
                 )
-                full_message = response.choices[0].message['content'].strip()
+                full_message = response.choices[0].text.strip()
                 for i in range(0, len(full_message), 2000):
                     await message.channel.send(full_message[i:i+2000])
         except Exception as e:
@@ -62,10 +62,10 @@ class AskChatGPT(commands.Cog):
         try:
             async with ctx.typing():
                 openai.api_key = api_key
-                response = await openai.Image.acreate(
+                response = openai.Image.create(
+                    model="text-to-image-002",
                     prompt=description,
-                    n=1,
-                    size="1024x1024"
+                    n=1
                 )
                 image_url = response.data[0].url
                 async with aiohttp.ClientSession() as session:
