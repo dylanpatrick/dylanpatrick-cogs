@@ -53,7 +53,7 @@ class AskChatGPT(commands.Cog):
                     messages=[{"role": "user", "content": query}],
                     max_tokens=150
                 )
-                full_message = response.choices[0].message['content'].strip()
+                full_message = response.choices[0].message.content.strip()
                 for i in range(0, len(full_message), 2000):
                     await message.channel.send(full_message[i:i+2000])
         except Exception as e:
