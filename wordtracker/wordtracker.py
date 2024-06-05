@@ -1,4 +1,5 @@
 from redbot.core import commands, Config
+import re
 
 class WordTracker(commands.Cog):
     """A cog to track the usage of a specific word in chat messages and record user-specific counts."""
@@ -22,7 +23,7 @@ class WordTracker(commands.Cog):
         if tracked_word is None:
             return
 
-        if tracked_word in message.content.lower():
+        if re.search(tracked_word, message.content.lower()):
             # Increment the global count
             current_count = await self.config.word_count()
             if current_count is None:
