@@ -1,9 +1,10 @@
-import openai
+import os
 import discord
 import aiohttp
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from io import BytesIO
+from openai import AsyncOpenAI
 
 class AskChatGPT(commands.Cog):
     """A Redbot cog to interact with OpenAI's ChatGPT and DALL-E."""
@@ -46,8 +47,8 @@ class AskChatGPT(commands.Cog):
 
         try:
             async with message.channel.typing():
-                openai.api_key = api_key
-                response = await openai.ChatCompletion.acreate(
+                client = AsyncOpenAI(api_key=api_key)
+                response = await client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": query}],
                     max_tokens=150
@@ -61,8 +62,8 @@ class AskChatGPT(commands.Cog):
     async def handle_generateimage(self, ctx, description: str, api_key: str):
         try:
             async with ctx.typing():
-                openai.api_key = api_key
-                response = await openai.Image.acreate(
+                client = AsyncOpenAI(api_key=api_key)
+                response = await client.images.generate(
                     prompt=description,
                     n=1,
                     size="1024x1024"
