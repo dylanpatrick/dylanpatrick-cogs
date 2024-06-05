@@ -65,5 +65,4 @@ class WordTracker(commands.Cog):
         await ctx.send(f"The new tracked word is '{new_word}'.")
 
 async def setup(bot):
-    cog = WordTracker(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(WordTracker(bot))
