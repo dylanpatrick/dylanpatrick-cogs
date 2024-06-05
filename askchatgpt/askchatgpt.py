@@ -12,13 +12,19 @@ class AskChatGPT(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
-        self.config.register_global(api_key=None)
+        self.config.register_global(api_key=None, model="gpt-3.5-turbo")
 
     @commands.command()
     async def setapikey(self, ctx, *, key: str):
         """Set the OpenAI API key."""
         await self.config.api_key.set(key)
         await ctx.send("API key updated successfully.")
+
+    @commands.command()
+    async def setmodel(self, ctx, *, model: str):
+        """Set the OpenAI model."""
+        await self.config.model.set(model)
+        await ctx.send(f"Model updated to {model}.")
 
     @commands.command()
     async def generateimage(self, ctx, *, description: str):
@@ -41,6 +47,7 @@ class AskChatGPT(commands.Cog):
 
     async def handle_askgpt(self, message, query: str):
         api_key = await self.config.api_key()
+        model = await self.config.model()
         if not api_key:
             await message.channel.send("OpenAI API key is not set. Please set it using `!setapikey` command.")
             return
@@ -49,7 +56,7 @@ class AskChatGPT(commands.Cog):
             async with message.channel.typing():
                 client = AsyncOpenAI(api_key=api_key)
                 response = await client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=model,
                     messages=[{"role": "user", "content": query}],
                     max_tokens=150
                 )
