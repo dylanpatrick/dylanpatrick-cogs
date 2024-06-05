@@ -23,19 +23,21 @@ class WordTracker(commands.Cog):
         if tracked_word is None:
             return
 
-        if re.search(tracked_word, message.content.lower()):
+        matches = re.findall(tracked_word, message.content.lower())
+        match_count = len(matches)
+        if match_count > 0:
             # Increment the global count
             current_count = await self.config.word_count()
             if current_count is None:
                 current_count = 0
-            await self.config.word_count.set(current_count + 1)
+            await self.config.word_count.set(current_count + match_count)
 
             # Increment the user-specific count
             user_counts = await self.config.user_counts()
             if user_counts is None:
                 user_counts = {}
             user_id = str(message.author.id)  # Convert to string for JSON storage
-            user_counts[user_id] = user_counts.get(user_id, 0) + 1
+            user_counts[user_id] = user_counts.get(user_id, 0) + match_count
             await self.config.user_counts.set(user_counts)
 
     @commands.command()
