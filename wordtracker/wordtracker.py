@@ -1,7 +1,4 @@
 from redbot.core import commands, Config
-import logging
-
-logger = logging.getLogger("redbot.wordtracker")
 
 class WordTracker(commands.Cog):
     """A cog to track the usage of a specific word in chat messages and record user-specific counts."""
@@ -23,21 +20,18 @@ class WordTracker(commands.Cog):
 
         tracked_word = await self.config.tracked_word()
         if tracked_word is None:
-            logger.error("Tracked word is None")
             return
 
         if tracked_word in message.content.lower():
             # Increment the global count
             current_count = await self.config.word_count()
             if current_count is None:
-                logger.error("Current word count is None")
                 current_count = 0
             await self.config.word_count.set(current_count + 1)
 
             # Increment the user-specific count
             user_counts = await self.config.user_counts()
             if user_counts is None:
-                logger.error("User counts is None")
                 user_counts = {}
             user_id = str(message.author.id)  # Convert to string for JSON storage
             user_counts[user_id] = user_counts.get(user_id, 0) + 1
@@ -72,4 +66,4 @@ class WordTracker(commands.Cog):
 
 async def setup(bot):
     cog = WordTracker(bot)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
