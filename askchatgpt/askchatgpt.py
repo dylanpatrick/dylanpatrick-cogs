@@ -61,10 +61,15 @@ class AskChatGPT(commands.Cog):
                     max_tokens=150
                 )
                 full_message = response.choices[0].message.content.strip()
-                for i in range(0, len(full_message), 2000):
-                    await message.channel.send(full_message[i:i+2000])
+                await self.send_long_message(message.channel, full_message)
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
+
+    async def send_long_message(self, channel, content):
+        """Helper function to send long messages by splitting them into smaller chunks."""
+        max_length = 2000
+        for i in range(0, len(content), max_length):
+            await channel.send(content[i:i+max_length])
 
     async def handle_generateimage(self, ctx, description: str, api_key: str):
         try:
