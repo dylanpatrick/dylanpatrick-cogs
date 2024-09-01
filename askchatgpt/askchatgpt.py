@@ -58,7 +58,7 @@ class AskChatGPT(commands.Cog):
                 response = await client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": query}],
-                    max_tokens=150
+                    max_tokens=4096
                 )
                 full_message = response.choices[0].message.content.strip()
                 await self.send_long_message(message.channel, full_message)
