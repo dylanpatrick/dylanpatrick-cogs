@@ -55,13 +55,24 @@ class AskChatGPT(commands.Cog):
         try:
             async with message.channel.typing():
                 client = AsyncOpenAI(api_key=api_key)
-                response = await client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": query}],
-                    max_tokens=4096
-                )
+
+                # Use correct token param for newer models like gpt-4-turbo or gpt-4o
+                use_max_completion_tokens = model.lower().startswith("gpt-4")
+
+                chat_params = {
+                    "model": model,
+                    "messages": [{"role": "user", "content": query}],
+                }
+
+                if use_max_completion_tokens:
+                    chat_params["max_completion_tokens"] = 1024
+                else:
+                    chat_params["max_tokens"] = 1024
+
+                response = await client.chat.completions.create(**chat_params)
                 full_message = response.choices[0].message.content.strip()
                 await self.send_long_message(message.channel, full_message)
+
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
 
