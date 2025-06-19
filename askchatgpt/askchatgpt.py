@@ -87,7 +87,9 @@ class AskChatGPT(commands.Cog):
                     self.memory[guild_id] = current_memory.get(guild_id, [])
 
                 history = self.memory[guild_id]
-                formatted_input = f"{message.author.display_name} ({message.author.name}#{message.author.discriminator}): {query}"
+                all_members = {m.id: f"{m.display_name} ({m.name}#{m.discriminator})" for m in message.guild.members} if message.guild else {}
+                sender_info = all_members.get(message.author.id, f"{message.author.display_name} ({message.author.name}#{message.author.discriminator})")
+                formatted_input = f"{sender_info}: {query}"
                 history.append({"role": "user", "content": formatted_input})
 
                 response = await client.chat.completions.create(
