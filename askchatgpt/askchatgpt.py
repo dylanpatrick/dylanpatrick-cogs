@@ -15,7 +15,6 @@ class AskChatGPT(commands.Cog):
         self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
         self.config.register_global(api_key=None, model="gpt-3.5-turbo")
         self.memory = defaultdict(list)  # {(channel_id, user_id): [messages]}
-        self._model_capability_cache = {}
 
     @commands.command()
     async def setapikey(self, ctx, *, key: str):
@@ -70,12 +69,10 @@ class AskChatGPT(commands.Cog):
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                token_param = await self.get_token_param(client, model)
-
                 response = await client.chat.completions.create(
                     model=model,
                     messages=history[-10:],
-                    **token_param
+                    max_tokens=1024  # fallback to SDK-supported param only
                 )
 
                 reply = response.choices[0].message.content.strip()
@@ -87,22 +84,6 @@ class AskChatGPT(commands.Cog):
 
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
-
-    async def get_token_param(self, client: AsyncOpenAI, model: str):
-        if model in self._model_capability_cache:
-            return self._model_capability_cache[model]
-
-        try:
-            model_info = await client.models.retrieve(model)
-            uses_max_completion_tokens = model_info and (
-                model_info.id.startswith("gpt-4") or "-o" in model_info.id or "-mini" in model_info.id
-            )
-        except Exception:
-            uses_max_completion_tokens = model.startswith("gpt-4") or "-o" in model or "-mini" in model
-
-        token_param = {"max_completion_tokens": 1024} if uses_max_completion_tokens else {"max_tokens": 1024}
-        self._model_capability_cache[model] = token_param
-        return token_param
 
     async def send_long_message(self, channel, content):
         max_length = 2000
