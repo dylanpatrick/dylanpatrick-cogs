@@ -70,25 +70,23 @@ class AskChatGPT(commands.Cog):
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                # Determine supported token parameter
-                token_param = "max_tokens"
+                # Default to max_completion_tokens, fall back to max_tokens only on specific exception
                 try:
-                    await client.chat.completions.create(
+                    response = await client.chat.completions.create(
                         model=model,
-                        messages=[{"role": "user", "content": "Test."}],
-                        max_completion_tokens=10
+                        messages=history[-10:],
+                        max_completion_tokens=1024
                     )
-                    token_param = "max_completion_tokens"
-                except Exception:
-                    pass
+                except Exception as e:
+                    if "max_completion_tokens" in str(e):
+                        response = await client.chat.completions.create(
+                            model=model,
+                            messages=history[-10:],
+                            max_tokens=1024
+                        )
+                    else:
+                        raise
 
-                params = {
-                    "model": model,
-                    "messages": history[-10:],
-                    token_param: 1024
-                }
-
-                response = await client.chat.completions.create(**params)
                 reply = response.choices[0].message.content.strip()
 
                 history.append({"role": "assistant", "content": reply})
