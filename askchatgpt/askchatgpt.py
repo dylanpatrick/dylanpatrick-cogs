@@ -72,7 +72,7 @@ class AskChatGPT(commands.Cog):
                 response = await client.chat.completions.create(
                     model=model,
                     messages=history[-10:],
-                    max_completion_tokens=1024
+                    max_tokens=1024
                 )
 
                 reply = response.choices[0].message.content.strip()
