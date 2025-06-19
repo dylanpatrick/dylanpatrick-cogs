@@ -72,17 +72,19 @@ class AskChatGPT(commands.Cog):
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                chat_params = {
-                    "model": model,
-                    "messages": history[-10:],
-                }
-
                 if uses_max_completion_tokens:
-                    chat_params["max_completion_tokens"] = 1024
+                    response = await client.chat.completions.create(
+                        model=model,
+                        messages=history[-10:],
+                        max_completion_tokens=1024
+                    )
                 else:
-                    chat_params["max_tokens"] = 1024
+                    response = await client.chat.completions.create(
+                        model=model,
+                        messages=history[-10:],
+                        max_tokens=1024
+                    )
 
-                response = await client.chat.completions.create(**chat_params)
                 reply = response.choices[0].message.content.strip()
 
                 history.append({"role": "assistant", "content": reply})
