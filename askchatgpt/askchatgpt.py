@@ -66,19 +66,19 @@ class AskChatGPT(commands.Cog):
             async with message.channel.typing():
                 client = AsyncOpenAI(api_key=api_key)
 
-                uses_max_completion_tokens = await self.model_uses_max_completion_tokens(client, model)
-
                 key = (message.channel.id, message.author.id)
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                if uses_max_completion_tokens:
+                # Attempt only max_completion_tokens and fallback
+                try:
                     response = await client.chat.completions.create(
                         model=model,
                         messages=history[-10:],
                         max_completion_tokens=1024
                     )
-                else:
+                except Exception as e:
+                    # Retry with max_tokens if completion param fails
                     response = await client.chat.completions.create(
                         model=model,
                         messages=history[-10:],
