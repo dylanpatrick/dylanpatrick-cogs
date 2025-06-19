@@ -70,21 +70,25 @@ class AskChatGPT(commands.Cog):
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                # Attempt only max_completion_tokens and fallback
+                # Determine supported token parameter
+                token_param = "max_tokens"
                 try:
-                    response = await client.chat.completions.create(
+                    await client.chat.completions.create(
                         model=model,
-                        messages=history[-10:],
-                        max_completion_tokens=1024
+                        messages=[{"role": "user", "content": "Test."}],
+                        max_completion_tokens=10
                     )
-                except Exception as e:
-                    # Retry with max_tokens if completion param fails
-                    response = await client.chat.completions.create(
-                        model=model,
-                        messages=history[-10:],
-                        max_tokens=1024
-                    )
+                    token_param = "max_completion_tokens"
+                except Exception:
+                    pass
 
+                params = {
+                    "model": model,
+                    "messages": history[-10:],
+                    token_param: 1024
+                }
+
+                response = await client.chat.completions.create(**params)
                 reply = response.choices[0].message.content.strip()
 
                 history.append({"role": "assistant", "content": reply})
@@ -94,21 +98,6 @@ class AskChatGPT(commands.Cog):
 
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
-
-    async def model_uses_max_completion_tokens(self, client: AsyncOpenAI, model_name: str) -> bool:
-        if model_name in self._model_capability_cache:
-            return self._model_capability_cache[model_name]
-
-        try:
-            model_info = await client.models.retrieve(model_name)
-            uses_new_tokens = (
-                model_info.id.startswith("gpt-4") and ("turbo" in model_info.id or model_info.id.endswith("o"))
-            )
-        except Exception:
-            uses_new_tokens = model_name.startswith("gpt-4")
-
-        self._model_capability_cache[model_name] = uses_new_tokens
-        return uses_new_tokens
 
     async def send_long_message(self, channel, content):
         max_length = 2000
