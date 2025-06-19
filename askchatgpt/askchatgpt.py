@@ -15,7 +15,6 @@ class AskChatGPT(commands.Cog):
         self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
         self.config.register_global(api_key=None, model="gpt-3.5-turbo")
         self.memory = defaultdict(list)  # {(channel_id, user_id): [messages]}
-        self._model_capability_cache = {}  # For caching validated model info
 
     @commands.command()
     async def setapikey(self, ctx, *, key: str):
@@ -70,22 +69,11 @@ class AskChatGPT(commands.Cog):
                 history = self.memory[key]
                 history.append({"role": "user", "content": query})
 
-                # Default to max_completion_tokens, fall back to max_tokens only on specific exception
-                try:
-                    response = await client.chat.completions.create(
-                        model=model,
-                        messages=history[-10:],
-                        max_completion_tokens=1024
-                    )
-                except Exception as e:
-                    if "max_completion_tokens" in str(e):
-                        response = await client.chat.completions.create(
-                            model=model,
-                            messages=history[-10:],
-                            max_tokens=1024
-                        )
-                    else:
-                        raise
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=history[-10:],
+                    max_completion_tokens=1024
+                )
 
                 reply = response.choices[0].message.content.strip()
 
