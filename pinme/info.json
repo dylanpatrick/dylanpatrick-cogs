@@ -1,0 +1,9 @@
+{
+    "author": ["dylanpatrick", "dylan"],
+    "description": "Pin more messages than Discord let's you.",
+    "install_msg": "Thanks for installing, have fun.",
+    "short": "Pin messages",
+    "tags": ["pinme"],
+    "type": "COG",
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+}
