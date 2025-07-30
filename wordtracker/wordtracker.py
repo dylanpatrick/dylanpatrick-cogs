@@ -2,70 +2,129 @@ from redbot.core import commands, Config
 import re
 
 class WordTracker(commands.Cog):
-    """A cog to track the usage of a specific word in chat messages and record user-specific counts."""
+    """A cog to track usage counts for multiple words in chat messages."""
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         default_global = {
-            "word_count": 0,
-            "tracked_word": "happiness",
-            "user_counts": {}  # Stores counts per user
+            "tracked_words": [],  # List of words being tracked
+            "word_counts": {},    # Global counts per word
+            "user_counts": {}     # Counts per word per user: {word: {user_id: count}}
         }
         self.config.register_global(**default_global)
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot:  # Skip bot messages
+        if message.author.bot:
             return
-
-        tracked_word = await self.config.tracked_word()
-        if tracked_word is None:
+        content = message.content.lower()
+        tracked_words = await self.config.tracked_words()
+        if not tracked_words:
             return
+        # Prepare config values
+        global_counts = await self.config.word_counts()
+        user_counts = await self.config.user_counts()
+        updated_global = False
+        updated_users = False
 
-        matches = re.findall(tracked_word, message.content.lower())
-        match_count = len(matches)
-        if match_count > 0:
-            # Increment the global count
-            current_count = await self.config.word_count()
-            if current_count is None:
-                current_count = 0
-            await self.config.word_count.set(current_count + match_count)
+        for word in tracked_words:
+            # Use regex word boundaries for full words, escape special chars
+            pattern = rf"\b{re.escape(word.lower())}\b"
+            matches = re.findall(pattern, content)
+            count = len(matches)
+            if count > 0:
+                # Update global count
+                global_counts[word] = global_counts.get(word, 0) + count
+                updated_global = True
+                # Update per-user count
+                w_users = user_counts.get(word, {})
+                uid = str(message.author.id)
+                w_users[uid] = w_users.get(uid, 0) + count
+                user_counts[word] = w_users
+                updated_users = True
 
-            # Increment the user-specific count
-            user_counts = await self.config.user_counts()
-            if user_counts is None:
-                user_counts = {}
-            user_id = str(message.author.id)  # Convert to string for JSON storage
-            user_counts[user_id] = user_counts.get(user_id, 0) + match_count
+        # Save if changed
+        if updated_global:
+            await self.config.word_counts.set(global_counts)
+        if updated_users:
             await self.config.user_counts.set(user_counts)
 
     @commands.command()
-    async def wordcount(self, ctx):
-        """Shows how many times the tracked word has been mentioned by each user, ranked."""
-        word = await self.config.tracked_word()
-        if word is None:
-            await ctx.send("Tracked word is not set.")
+    async def addword(self, ctx, *, word: str):
+        """Adds a word to the tracked list."""
+        word = word.lower()
+        tracked = await self.config.tracked_words()
+        if word in tracked:
+            await ctx.send(f"'{word}' is already being tracked.")
             return
-
+        tracked.append(word)
+        await self.config.tracked_words.set(tracked)
+        # Initialize counts
+        global_counts = await self.config.word_counts()
         user_counts = await self.config.user_counts()
-        if not user_counts:
-            await ctx.send(f"No mentions of '{word}' have been recorded.")
-            return
-
-        # Create a sorted list of tuples (user_id, count) in descending order of count
-        sorted_counts = sorted(user_counts.items(), key=lambda x: x[1], reverse=True)
-        message_lines = [f"User <@{user_id}> mentioned '{word}' {count} times." for user_id, count in sorted_counts]
-
-        await ctx.send("\n".join(message_lines))
+        global_counts.setdefault(word, 0)
+        user_counts.setdefault(word, {})
+        await self.config.word_counts.set(global_counts)
+        await self.config.user_counts.set(user_counts)
+        await ctx.send(f"Now tracking word: '{word}'")
 
     @commands.command()
-    @commands.is_owner()  # This makes the command only usable by the bot owner
-    async def settrackedword(self, ctx, *, new_word: str):
-        """Sets a new word to track."""
-        await self.config.tracked_word.set(new_word.lower())
-        await self.config.user_counts.set({})  # Reset user counts when changing the word
-        await ctx.send(f"The new tracked word is '{new_word}'.")
+    async def removeword(self, ctx, *, word: str):
+        """Removes a word from tracking."""
+        word = word.lower()
+        tracked = await self.config.tracked_words()
+        if word not in tracked:
+            await ctx.send(f"'{word}' is not in the tracked list.")
+            return
+        tracked.remove(word)
+        await self.config.tracked_words.set(tracked)
+        # Remove counts
+        global_counts = await self.config.word_counts()
+        user_counts = await self.config.user_counts()
+        global_counts.pop(word, None)
+        user_counts.pop(word, None)
+        await self.config.word_counts.set(global_counts)
+        await self.config.user_counts.set(user_counts)
+        await ctx.send(f"Stopped tracking word: '{word}'")
+
+    @commands.command()
+    async def listwords(self, ctx):
+        """Lists all currently tracked words."""
+        tracked = await self.config.tracked_words()
+        if not tracked:
+            await ctx.send("No words are currently being tracked.")
+            return
+        await ctx.send("Currently tracked words: " + ", ".join(f"'{w}'" for w in tracked))
+
+    @commands.command()
+    async def wordcount(self, ctx, *, word: str = None):
+        """Displays counts for a specific word or all words if none specified."""
+        tracked = await self.config.tracked_words()
+        global_counts = await self.config.word_counts()
+        user_counts = await self.config.user_counts()
+
+        if word:
+            word = word.lower()
+            if word not in tracked:
+                await ctx.send(f"'{word}' is not being tracked.")
+                return
+            total = global_counts.get(word, 0)
+            users = user_counts.get(word, {})
+            lines = [f"'{word}' total mentions: {total}"]
+            if users:
+                sorted_users = sorted(users.items(), key=lambda x: x[1], reverse=True)
+                lines += [f"User <@{uid}>: {cnt}" for uid, cnt in sorted_users]
+            await ctx.send("\n".join(lines))
+        else:
+            if not tracked:
+                await ctx.send("No words are currently being tracked.")
+                return
+            lines = []
+            for w in tracked:
+                total = global_counts.get(w, 0)
+                lines.append(f"'{w}': {total} mentions")
+            await ctx.send("\n".join(lines))
 
 async def setup(bot):
     await bot.add_cog(WordTracker(bot))
