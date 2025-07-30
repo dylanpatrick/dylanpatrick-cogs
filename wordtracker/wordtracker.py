@@ -2,7 +2,7 @@ from redbot.core import commands, Config
 import re
 
 class WordTracker(commands.Cog):
-    """A cog to track usage counts for multiple words in chat messages."""
+    """A cog to track usage counts for multiple words in chat messages (including substrings)."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -22,16 +22,16 @@ class WordTracker(commands.Cog):
         tracked_words = await self.config.tracked_words()
         if not tracked_words:
             return
-        # Prepare config values
+
         global_counts = await self.config.word_counts()
         user_counts = await self.config.user_counts()
         updated_global = False
         updated_users = False
 
         for word in tracked_words:
-            # Use regex word boundaries for full words, escape special chars
-            pattern = rf"\b{re.escape(word.lower())}\b"
-            matches = re.findall(pattern, content)
+            # Count all occurrences of the substring (case-insensitive)
+            substr = re.escape(word.lower())
+            matches = re.findall(substr, content)
             count = len(matches)
             if count > 0:
                 # Update global count
@@ -44,7 +44,6 @@ class WordTracker(commands.Cog):
                 user_counts[word] = w_users
                 updated_users = True
 
-        # Save if changed
         if updated_global:
             await self.config.word_counts.set(global_counts)
         if updated_users:
@@ -52,7 +51,7 @@ class WordTracker(commands.Cog):
 
     @commands.command()
     async def addword(self, ctx, *, word: str):
-        """Adds a word to the tracked list."""
+        """Adds a word to the tracked list (substring matching)."""
         word = word.lower()
         tracked = await self.config.tracked_words()
         if word in tracked:
@@ -67,7 +66,7 @@ class WordTracker(commands.Cog):
         user_counts.setdefault(word, {})
         await self.config.word_counts.set(global_counts)
         await self.config.user_counts.set(user_counts)
-        await ctx.send(f"Now tracking word: '{word}'")
+        await ctx.send(f"Now tracking substring: '{word}'")
 
     @commands.command()
     async def removeword(self, ctx, *, word: str):
@@ -79,27 +78,26 @@ class WordTracker(commands.Cog):
             return
         tracked.remove(word)
         await self.config.tracked_words.set(tracked)
-        # Remove counts
         global_counts = await self.config.word_counts()
         user_counts = await self.config.user_counts()
         global_counts.pop(word, None)
         user_counts.pop(word, None)
         await self.config.word_counts.set(global_counts)
         await self.config.user_counts.set(user_counts)
-        await ctx.send(f"Stopped tracking word: '{word}'")
+        await ctx.send(f"Stopped tracking substring: '{word}'")
 
     @commands.command()
     async def listwords(self, ctx):
-        """Lists all currently tracked words."""
+        """Lists all currently tracked substrings."""
         tracked = await self.config.tracked_words()
         if not tracked:
-            await ctx.send("No words are currently being tracked.")
+            await ctx.send("No substrings are currently being tracked.")
             return
-        await ctx.send("Currently tracked words: " + ", ".join(f"'{w}'" for w in tracked))
+        await ctx.send("Currently tracked substrings: " + ", ".join(f"'{w}'" for w in tracked))
 
     @commands.command()
     async def wordcount(self, ctx, *, word: str = None):
-        """Displays counts for a specific word or all words if none specified."""
+        """Displays counts for a specific substring or all substrings if none specified."""
         tracked = await self.config.tracked_words()
         global_counts = await self.config.word_counts()
         user_counts = await self.config.user_counts()
@@ -118,7 +116,7 @@ class WordTracker(commands.Cog):
             await ctx.send("\n".join(lines))
         else:
             if not tracked:
-                await ctx.send("No words are currently being tracked.")
+                await ctx.send("No substrings are currently being tracked.")
                 return
             lines = []
             for w in tracked:
