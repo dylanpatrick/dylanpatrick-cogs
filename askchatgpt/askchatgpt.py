@@ -92,13 +92,19 @@ class AskChatGPT(commands.Cog):
     def _to_responses_input(self, history_slice):
         """
         Stored format: {"role":"user"/"assistant", "content":"..."}
-        Responses format: {"role":"user", "content":[{"type":"text","text":"..."}]}
+        Responses format required by GPT-5.x:
+        {"role":"user","content":[{"type":"input_text","text":"..."}]}
         """
         out = []
         for msg in history_slice:
             role = msg.get("role", "user")
             text = msg.get("content", "")
-            out.append({"role": role, "content": [{"type": "text", "text": text}]})
+            out.append(
+                {
+                    "role": role,
+                    "content": [{"type": "input_text", "text": text}],
+                }
+            )
         return out
 
     async def _friendly_error(self, e):
@@ -137,6 +143,13 @@ class AskChatGPT(commands.Cog):
         model = model.strip().lower()
         await self.config.image_model.set(model)
         await ctx.send(f"Image model updated to `{model}`.")
+
+    @commands.command()
+    async def modelstatus(self, ctx):
+        """Show current configured text and image models."""
+        text_model = await self.config.model()
+        image_model = await self.config.image_model()
+        await ctx.send(f"Text model: `{text_model}`\nImage model: `{image_model}`")
 
     @commands.command()
     async def clearmemory(self, ctx):
