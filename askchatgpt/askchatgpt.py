@@ -9,7 +9,6 @@ from redbot.core.bot import Red
 
 from openai import AsyncOpenAI
 
-
 # Memory limit in BYTES (10 MB here; increase if you want)
 MAX_MEMORY_BYTES = 10 * 1024 * 1024
 
@@ -43,10 +42,7 @@ class AskChatGPT(commands.Cog):
         return AsyncOpenAI(api_key=api_key)
 
     def _scope_id(self, message_or_ctx):
-        """
-        Scope memory to a guild if available, otherwise to the channel id (DMs).
-        Works for both ctx and message objects.
-        """
+        """Scope memory to guild if available; otherwise to channel id (DMs)."""
         guild = getattr(message_or_ctx, "guild", None)
         channel = getattr(message_or_ctx, "channel", None)
         if guild:
@@ -89,23 +85,20 @@ class AskChatGPT(commands.Cog):
             sender = f"{message.author.display_name}"
         return f"{sender}: {query}"
 
-    def _to_responses_input(self, history_slice):
+    def _build_transcript_input(self, history_slice):
         """
-        Stored format: {"role":"user"/"assistant", "content":"..."}
-        Responses format required by GPT-5.x:
-        {"role":"user","content":[{"type":"input_text","text":"..."}]}
+        Build a plain-text transcript for endpoints that don't accept structured input blocks.
+        history_slice items are like: {"role": "user"/"assistant", "content": "..."}
         """
-        out = []
+        lines = []
         for msg in history_slice:
             role = msg.get("role", "user")
             text = msg.get("content", "")
-            out.append(
-                {
-                    "role": role,
-                    "content": [{"type": "input_text", "text": text}],
-                }
-            )
-        return out
+            if role == "assistant":
+                lines.append(f"Assistant: {text}")
+            else:
+                lines.append(f"User: {text}")
+        return "\n".join(lines)
 
     async def _friendly_error(self, e):
         s = str(e)
@@ -132,7 +125,7 @@ class AskChatGPT(commands.Cog):
 
     @commands.command()
     async def setmodel(self, ctx, *, model: str):
-        """Set the OpenAI text model (Responses API). Example: !setmodel gpt-5.2"""
+        """Set the OpenAI text model. Example: !setmodel gpt-5.2"""
         model = model.strip().lower()
         await self.config.model.set(model)
         await ctx.send(f"Model updated to `{model}`.")
@@ -241,7 +234,6 @@ class AskChatGPT(commands.Cog):
         if self.bot.user not in message.mentions:
             return
 
-        # Strip the bot mention(s)
         content = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
         content = content.replace(f"<@{self.bot.user.id}>", "").strip()
 
@@ -266,9 +258,12 @@ class AskChatGPT(commands.Cog):
 
         try:
             async with message.channel.typing():
+                # IMPORTANT: send a plain string transcript (no structured content blocks)
+                transcript = self._build_transcript_input(history[-10:])
+
                 resp = await client.responses.create(
                     model=model,
-                    input=self._to_responses_input(history[-10:]),
+                    input=transcript,
                     max_output_tokens=1024,
                 )
 
