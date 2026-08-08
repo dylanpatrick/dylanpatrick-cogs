@@ -1,9 +1,12 @@
 {
     "author": ["dylanpatrick", "dylan"],
-    "description": "Ask ChatGPT a question.",
-    "install_msg": "Thanks for installing, have fun.",
-    "short": "Ask ChatGPT a question.",
-    "tags": ["askchatgpt"],
+    "description": "A concise, mention-only OpenAI assistant with bounded same-channel context and server-aware identities.",
+    "install_msg": "Set the key privately with `[p]set api openai api_key,YOUR_OPENAI_API_KEY`, then load the cog. See `[p]help askgpt` and the bundled README for privacy details.",
+    "short": "Mention-only OpenAI assistant with channel context.",
+    "tags": ["askchatgpt", "openai", "ai"],
     "type": "COG",
-    "end_user_data_statement": "This cog does not persistently store data or metadata about users."
+    "min_bot_version": "3.5.24",
+    "min_python_version": [3, 9, 0],
+    "requirements": ["openai>=2.21.0,<2.29.0"],
+    "end_user_data_statement": "When tagged, this cog sends the request, bounded recent same-channel message context, relevant Discord identity metadata, and opted-in member profile text to OpenAI. The generateimage command sends its image prompt to OpenAI. The cog does not persist conversation messages or image prompts. It stores optional server-scoped profiles and a pseudonymization salt in Red configuration until cleared or deleted. Responses requests use store=false, though OpenAI may retain abuse-monitoring logs under its data policy."
 }
